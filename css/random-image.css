@@ -1,0 +1,225 @@
+/* ============================================================
+   随机像素图片生成器
+   ============================================================ */
+
+/* 遮罩层 */
+.random-image-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.65);
+
+    padding: 20px;
+
+    box-sizing: border-box;
+}
+
+/* 显示状态 */
+.random-image-overlay.active {
+    display: flex;
+}
+
+
+/* ============================================================
+   主窗口
+   ============================================================ */
+
+.random-image-window {
+    width: min(900px, 95vw);
+    max-height: 90vh;
+
+    overflow-y: auto;
+
+    background: #ffffff;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.35);
+
+    padding: 24px;
+
+    box-sizing: border-box;
+
+    color: #222;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Microsoft YaHei",
+        sans-serif;
+}
+
+
+/* ============================================================
+   标题
+   ============================================================ */
+
+.random-image-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 18px;
+}
+
+.random-image-title h2 {
+    margin: 0;
+
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.random-image-close {
+    width: 36px;
+    height: 36px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #f1f1f1;
+
+    cursor: pointer;
+
+    font-size: 20px;
+
+    transition: 0.2s;
+}
+
+.random-image-close:hover {
+    background: #e2e2e2;
+}
+
+
+/* ============================================================
+   图片区域
+   ============================================================ */
+
+.random-image-preview {
+    width: 100%;
+
+    background: #111;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.random-image-preview canvas {
+    display: block;
+
+    width: 100%;
+    height: auto;
+
+    image-rendering: pixelated;
+}
+
+
+/* ============================================================
+   图片信息
+   ============================================================ */
+
+.random-image-info {
+    text-align: center;
+
+    margin-top: 12px;
+
+    font-size: 13px;
+
+    color: #777;
+}
+
+
+/* ============================================================
+   按钮区域
+   ============================================================ */
+
+.random-image-buttons {
+    display: flex;
+
+    justify-content: center;
+
+    gap: 12px;
+
+    margin-top: 20px;
+}
+
+.random-image-button {
+    border: none;
+
+    padding: 10px 22px;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    font-size: 14px;
+
+    transition:
+        transform 0.15s,
+        opacity 0.15s;
+}
+
+.random-image-button:hover {
+    transform: translateY(-1px);
+
+    opacity: 0.9;
+}
+
+.random-image-button:active {
+    transform: translateY(0);
+}
+
+
+/* 重新生成 */
+.random-image-generate {
+    background: #222;
+
+    color: #fff;
+}
+
+
+/* 保存图片 */
+.random-image-save {
+    background: #eeeeee;
+
+    color: #222;
+}
+
+
+/* ============================================================
+   手机适配
+   ============================================================ */
+
+@media (max-width: 600px) {
+
+    .random-image-window {
+        width: 100%;
+
+        padding: 16px;
+
+        border-radius: 12px;
+    }
+
+    .random-image-title h2 {
+        font-size: 18px;
+    }
+
+    .random-image-buttons {
+        flex-direction: column;
+    }
+
+    .random-image-button {
+        width: 100%;
+    }
+}
