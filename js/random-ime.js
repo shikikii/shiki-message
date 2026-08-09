@@ -608,6 +608,276 @@
 
             keystrokes += reading.length;
 
+                   log.push({
+            type: "composition",
+            reading
+        });
+
+        let confirmed =
+            confirmSegment(
+                reading,
+                config,
+                log
+            );
+
+        // 防止超过最终字数上限
+        const remaining =
+            config.maxLength -
+            text.length;
+
+        if (
+            confirmed.length >
+            remaining
+        ) {
+            confirmed =
+                confirmed.slice(
+                    0,
+                    remaining
+                );
+        }
+
+        text += confirmed;
+
+        log.push({
+            type: "buffer-update",
+            text
+        });
+
+        // 小概率模拟 Backspace
+        if (
+            text.length >
+                config.minLength &&
+            Math.random() <
+                config.backspaceChance
+        ) {
+            const removed =
+                text.slice(-1);
+
+            text =
+                text.slice(0, -1);
+
             log.push({
-                type: "composition",
-               
+                type: "backspace",
+                removed,
+                text
+            });
+        }
+
+        const continueTyping =
+            shouldContinue(
+                text.length,
+                config
+            );
+
+        log.push({
+            type: "continue-check",
+            result:
+                continueTyping
+        });
+
+        if (!continueTyping) {
+            break;
+        }
+    }
+
+    if (!text) {
+        text = "あ";
+
+        log.push({
+            type: "fallback",
+            text
+        });
+    }
+
+    log.push({
+        type: "send",
+        text
+    });
+
+    const result = {
+        text,
+        keystrokes,
+        steps,
+        log
+    };
+
+    if (config.debug) {
+        printDebug(result);
+    }
+
+    return result;
+}
+
+// ============================================================
+// Console 调试输出
+// ============================================================
+
+function printDebug(result) {
+    console.group(
+        "[RandomIME] Flick Session"
+    );
+
+    result.log.forEach(
+        function (event) {
+            switch (event.type) {
+                case "session-start":
+                    console.log(
+                        "SESSION START",
+                        event.version
+                    );
+                    break;
+
+                case "flick":
+                    console.log(
+                        "FLICK",
+                        event.key,
+                        "→",
+                        event.direction,
+                        "→",
+                        event.output,
+                        "| composition:",
+                        event.composition
+                    );
+                    break;
+
+                case "composition":
+                    console.log(
+                        "COMPOSITION →",
+                        event.reading
+                    );
+                    break;
+
+                case "candidate-list":
+                    console.log(
+                        "CANDIDATES →",
+                        event.candidates
+                    );
+                    break;
+
+                case "open-candidates":
+                    console.log(
+                        "OPEN CANDIDATES →",
+                        event.reading
+                    );
+                    break;
+
+                case "choose-candidate":
+                    console.log(
+                        "SELECT →",
+                        event.text
+                    );
+                    break;
+
+                case "confirm-katakana":
+                    console.log(
+                        "CONFIRM KATAKANA →",
+                        event.text
+                    );
+                    break;
+
+                case "confirm-kana":
+                    console.log(
+                        "CONFIRM KANA →",
+                        event.text
+                    );
+                    break;
+
+                case "buffer-update":
+                    console.log(
+                        "BUFFER →",
+                        event.text
+                    );
+                    break;
+
+                case "backspace":
+                    console.log(
+                        "BACKSPACE →",
+                        event.removed,
+                        "| BUFFER →",
+                        event.text
+                    );
+                    break;
+
+                case "continue-check":
+                    console.log(
+                        "CONTINUE →",
+                        event.result
+                    );
+                    break;
+
+                case "send":
+                    console.log(
+                        "SEND →",
+                        event.text
+                    );
+                    break;
+            }
+        }
+    );
+
+    console.log(
+        "FINAL:",
+        result.text
+    );
+
+    console.log(
+        "KEYSTROKES:",
+        result.keystrokes
+    );
+
+    console.log(
+        "STEPS:",
+        result.steps
+    );
+
+    console.groupEnd();
+}
+
+// ============================================================
+// 对外 API
+// ============================================================
+
+window.RandomIME = {
+    version: VERSION,
+
+    generate,
+
+    getCandidates,
+
+    randomFlick,
+
+    hiraganaToKatakana,
+
+    dictionary: IME_DICTIONARY,
+
+    flickKeys: FLICK_KEYS
+};
+
+// ============================================================
+// 测试函数
+//
+// Console:
+//
+// testRandomIME()
+//
+// 或：
+//
+// testRandomIME({
+//     minLength: 4,
+//     maxLength: 12
+// })
+// ============================================================
+
+window.testRandomIME =
+    function (options) {
+        return window.RandomIME.generate(
+            options
+        );
+    };
+
+console.log(
+    "[RandomIME] Flick IME 核心已加载，版本",
+    VERSION
+);
+
+})();
