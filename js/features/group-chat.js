@@ -247,7 +247,61 @@ window.getGroupMemberForMessage = function(msgId) {
     for (var i = 0; i < idStr.length; i++) seed += idStr.charCodeAt(i) * (i + 1);
     return groupChatSettings.members[seed % groupChatSettings.members.length];
 };
+// ============================================================
+// 根据稳定 ID 获取群聊成员
+// ============================================================
 
+window.getGroupMemberById = function(memberId) {
+
+    if (
+        !memberId ||
+        !groupChatSettings ||
+        !Array.isArray(groupChatSettings.members)
+    ) {
+        return null;
+    }
+
+    return (
+        groupChatSettings.members.find(
+            function(member) {
+                return member.id === memberId;
+            }
+        ) || null
+    );
+
+};
+
+
+// ============================================================
+// 获取当前群聊的全部成员
+// ============================================================
+
+window.getGroupChatMembers = function() {
+
+    if (
+        !groupChatSettings ||
+        !Array.isArray(groupChatSettings.members)
+    ) {
+        return [];
+    }
+
+    return groupChatSettings.members.slice();
+
+};
+
+
+// ============================================================
+// 判断当前是否开启群聊
+// ============================================================
+
+window.isGroupChatEnabled = function() {
+
+    return !!(
+        groupChatSettings &&
+        groupChatSettings.enabled
+    );
+
+};
 document.addEventListener('DOMContentLoaded', function() {
     var exportAllBtn = document.getElementById('export-all-settings');
     var importAllBtn = document.getElementById('import-all-settings');
