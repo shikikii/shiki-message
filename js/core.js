@@ -1714,6 +1714,10 @@ if (specialReplyRoll < 0.03) {
 
 if (
     specialReplyRoll < 0.04 &&
+    (
+        typeof window.isGroupChatEnabled !== "function" ||
+        !window.isGroupChatEnabled()
+    ) &&
     window.PhotoAlbum &&
     typeof window.PhotoAlbum.generateRandomPhotoForOwner === "function"
 ) {
@@ -1878,6 +1882,35 @@ if (
     return;
 }
 
+// ============================================================
+// 群聊：1% 随机照片回复
+// ============================================================
+
+if (
+    specialReplyRoll >= 0.03 &&
+    specialReplyRoll < 0.04 &&
+    typeof window.isGroupChatEnabled === "function" &&
+    window.isGroupChatEnabled() &&
+    typeof window.sendGroupRandomPhoto === "function"
+) {
+
+    window.sendGroupRandomPhoto()
+        .catch(
+            function (error) {
+
+                console.error(
+                    "[GroupRandomPhoto] 自动发送失败：",
+                    error
+                );
+
+            }
+        );
+
+
+    // 图片就是本次回复
+    return;
+}
+                
             const replyCount = Math.random() < 0.75 ? 1: (Math.random() < 0.95 ? 2: 3);
             if (!customReplies || customReplies.length === 0) {
                 showNotification('回复库为空，请先到「自定义回复」中添加内容', 'info', 3500);
