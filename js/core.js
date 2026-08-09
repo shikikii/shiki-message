@@ -1633,11 +1633,208 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                      throttledSaveData();
                 }
             }
-            if (Math.random() < 0.03) {
-                // ── 对方拍一拍：调用提取的通用函数（同时供 /测试拍一拍 指令使用）──
-                if (typeof window._triggerPartnerPoke === 'function') window._triggerPartnerPoke();
-                return;
+            // ============================================================
+// 特殊回复概率
+//
+// 0% ～ 3% ：对方拍一拍
+// 3% ～ 4% ：对方发送随机照片
+// 4% ～100%：正常文字回复
+//
+// 使用同一个随机数，保证：
+// 拍一拍准确 3%
+// 随机照片准确 1%
+// ============================================================
+
+const specialReplyRoll = Math.random();
+
+
+// ------------------------------------------------------------
+// 3%：拍一拍
+// ------------------------------------------------------------
+
+if (specialReplyRoll < 0.03) {
+
+    if (
+        typeof window._triggerPartnerPoke === "function"
+    ) {
+
+        window._triggerPartnerPoke();
+
+    }
+
+    return;
+}
+
+
+// ------------------------------------------------------------
+// 1%：发送随机照片
+// ------------------------------------------------------------
+
+if (
+    specialReplyRoll < 0.04 &&
+    window.PhotoAlbum &&
+    typeof window.PhotoAlbum.generateRandomPhotoForOwner === "function"
+) {
+
+    const partnerName =
+        settings.partnerName ||
+        "对方";
+
+
+    const partnerOwner = {
+
+        ownerType:
+            "partner",
+
+        /*
+         * 每个会话里的对话对象拥有独立 ID。
+         *
+         * 这样以后不同聊天对象的照片不会混淆。
+         */
+        ownerId:
+            "partner_" +
+            (SESSION_ID || "default"),
+
+        ownerName:
+            partnerName,
+
+        conversationId:
+            SESSION_ID || null,
+
+        source:
+            "reply-random"
+    };
+
+
+    /*
+     * generateRandomPhotoForOwner：
+     *
+     * ① 生成随机图片
+     * ② 自动存进照片集
+     * ③ 返回刚生成的照片
+     */
+
+    window.PhotoAlbum
+        .generateRandomPhotoForOwner(
+            partnerOwner
+        )
+        .then(
+            function (photo) {
+
+                if (
+                    !photo ||
+                    !photo.image
+                ) {
+
+                    console.warn(
+                        "[RandomPhotoReply] 图片生成失败"
+                    );
+
+                    return;
+                }
+
+
+                // ================================================
+                // 作为“对方发来的图片”加入聊天
+                // ================================================
+
+                addMessage({
+
+                    id:
+                        Date.now() +
+                        Math.random(),
+
+                    sender:
+                        partnerName,
+
+                    text:
+                        "",
+
+                    image:
+                        photo.image,
+
+                    timestamp:
+                        new Date(),
+
+                    status:
+                        "received",
+
+                    favorited:
+                        false,
+
+                    note:
+                        null,
+
+                    type:
+                        "normal",
+
+                    /*
+                     * 额外留下照片 ID。
+                     *
+                     * 以后如果我们想实现：
+                     * “从聊天跳转到照片集”
+                     * 就可以直接对应。
+                     */
+                    albumPhotoId:
+                        photo.id
+                });
+
+
+                // 消息提示音
+                if (
+                    typeof playSound ===
+                    "function"
+                ) {
+
+                    playSound(
+                        "message"
+                    );
+
+                }
+
+
+                // 系统通知
+                if (
+                    typeof window._sendPartnerNotification ===
+                    "function"
+                ) {
+
+                    window._sendPartnerNotification(
+                        partnerName,
+                        "[图片]"
+                    );
+
+                }
+
+
+                console.log(
+                    "[RandomPhotoReply] " +
+                    partnerName +
+                    " 随机发送了一张照片"
+                );
+
             }
+        )
+        .catch(
+            function (error) {
+
+                console.error(
+                    "[RandomPhotoReply] 随机照片发送失败：",
+                    error
+                );
+
+            }
+        );
+
+
+    /*
+     * 很重要：
+     *
+     * 这张图片就是本次回复，
+     * 所以不继续执行后面的文字回复。
+     */
+    return;
+}
 
             const replyCount = Math.random() < 0.75 ? 1: (Math.random() < 0.95 ? 2: 3);
             if (!customReplies || customReplies.length === 0) {
