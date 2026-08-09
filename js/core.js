@@ -997,7 +997,27 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         avatarDiv.style.marginTop = settings.inChatAvatarCustomOffset + 'px';
     }
 
-    const groupMember = (msg.sender !== 'user' && typeof getGroupMemberForMessage === 'function') ? getGroupMemberForMessage(msg.id) : null;
+  const groupMember =
+    (
+        msg.sender !== 'user' &&
+        msg.groupMemberId &&
+        typeof window.getGroupMemberById === "function"
+    )
+        ?
+        window.getGroupMemberById(
+            msg.groupMemberId
+        )
+        :
+        (
+            msg.sender !== 'user' &&
+            typeof getGroupMemberForMessage === 'function'
+        )
+            ?
+            getGroupMemberForMessage(
+                msg.id
+            )
+            :
+            null;
 
     if (settings.inChatAvatarEnabled) {
         const isSameSenderGroup = groupMember && lastSenderRef.current === 'group_' + (groupMember ? groupMember.name : '');
@@ -1231,7 +1251,29 @@ const addMessage = (message) => {
     // --- Append new message ---
     let lastSenderRef = { current: null };
     if (prevMsg) {
-        const prevGroupMember = (prevMsg.sender !== 'user' && typeof getGroupMemberForMessage === 'function') ? getGroupMemberForMessage(prevMsg.id) : null;
+        const prevGroupMember =
+    (
+        prevMsg &&
+        prevMsg.sender !== 'user' &&
+        prevMsg.groupMemberId &&
+        typeof window.getGroupMemberById === "function"
+    )
+        ?
+        window.getGroupMemberById(
+            prevMsg.groupMemberId
+        )
+        :
+        (
+            prevMsg &&
+            prevMsg.sender !== 'user' &&
+            typeof getGroupMemberForMessage === 'function'
+        )
+            ?
+            getGroupMemberForMessage(
+                prevMsg.id
+            )
+            :
+            null;
         lastSenderRef.current = prevGroupMember ? ('group_' + prevGroupMember.name) : prevMsg.sender;
     }
     
