@@ -2242,58 +2242,59 @@ window.testPartnerRandomPhoto = async function () {
 // 测试：强制群聊成员发送随机照片
 // ============================================================
 
-window.testGroupRandomPhoto = async function () {
+// ============================================================
+// 正式功能：让随机群成员发送一张随机照片
+// ============================================================
+
+window.sendGroupRandomPhoto = async function () {
 
     try {
-
-        // --------------------------------------------------------
-        // 检查群聊
-        // --------------------------------------------------------
 
         if (
             typeof window.isGroupChatEnabled !== "function" ||
             !window.isGroupChatEnabled()
         ) {
 
-            console.warn(
-                "[GroupRandomPhotoTest] 当前没有开启群聊"
-            );
-
             return null;
         }
-
-
-        // --------------------------------------------------------
-        // 获取成员
-        // --------------------------------------------------------
-
-        const members =
-            (
-                typeof window.getGroupChatMembers === "function"
-            )
-                ?
-                window.getGroupChatMembers()
-                :
-                [];
 
 
         if (
-            !members ||
+            typeof window.getGroupChatMembers !== "function"
+        ) {
+
+            return null;
+        }
+
+
+        const members =
+            window.getGroupChatMembers();
+
+
+        if (
+            !Array.isArray(members) ||
             members.length === 0
         ) {
 
+            return null;
+        }
+
+
+        if (
+            !window.PhotoAlbum ||
+            typeof window.PhotoAlbum.generateRandomPhotoForOwner !==
+            "function"
+        ) {
+
             console.warn(
-                "[GroupRandomPhotoTest] 群聊没有成员"
+                "[GroupRandomPhoto] PhotoAlbum 未加载"
             );
 
             return null;
         }
 
 
-        // --------------------------------------------------------
-        // 随机选一个成员
-        // --------------------------------------------------------
-
+        // 随机选择发送者
         const member =
             members[
                 Math.floor(
@@ -2303,7 +2304,11 @@ window.testGroupRandomPhoto = async function () {
             ];
 
 
-        if (!member) {
+        if (
+            !member ||
+            !member.id
+        ) {
+
             return null;
         }
 
@@ -2319,10 +2324,7 @@ window.testGroupRandomPhoto = async function () {
                 "default";
 
 
-        // --------------------------------------------------------
-        // 生成并保存照片
-        // --------------------------------------------------------
-
+        // 生成 + 存入照片集
         const photo =
             await window.PhotoAlbum
                 .generateRandomPhotoForOwner(
@@ -2356,18 +2358,11 @@ window.testGroupRandomPhoto = async function () {
             !photo.image
         ) {
 
-            console.error(
-                "[GroupRandomPhotoTest] 图片生成失败"
-            );
-
             return null;
         }
 
 
-        // --------------------------------------------------------
-        // 发送进聊天
-        // --------------------------------------------------------
-
+        // 发进聊天
         addMessage(
             {
 
@@ -2375,11 +2370,6 @@ window.testGroupRandomPhoto = async function () {
                     Date.now() +
                     Math.random(),
 
-                /*
-                 * 注意：
-                 * sender 仍然不是 user，
-                 * 这样保持“收到的消息”样式。
-                 */
                 sender:
                     settings.partnerName ||
                     "群聊",
@@ -2405,11 +2395,6 @@ window.testGroupRandomPhoto = async function () {
                 type:
                     "normal",
 
-
-                // ================================================
-                // 最关键的数据
-                // ================================================
-
                 groupMemberId:
                     member.id,
 
@@ -2433,25 +2418,27 @@ window.testGroupRandomPhoto = async function () {
 
 
         console.log(
-            "[GroupRandomPhotoTest] 测试成功：" +
+            "[GroupRandomPhoto] " +
             (member.name || "群成员") +
-            " 发送了一张随机照片"
+            " 发送随机照片"
         );
 
 
         return {
+
             member:
                 member,
 
             photo:
                 photo
+
         };
 
 
     } catch (error) {
 
         console.error(
-            "[GroupRandomPhotoTest] 测试失败：",
+            "[GroupRandomPhoto] 发送失败：",
             error
         );
 
@@ -2461,226 +2448,23 @@ window.testGroupRandomPhoto = async function () {
 
 };
 
-// ============================================================
-// 测试：强制群聊成员发送随机照片
-// ============================================================
-
 window.testGroupRandomPhoto = async function () {
 
-    try {
-
-        // --------------------------------------------------------
-        // 检查群聊
-        // --------------------------------------------------------
-
-        if (
-            typeof window.isGroupChatEnabled !== "function" ||
-            !window.isGroupChatEnabled()
-        ) {
-
-            console.warn(
-                "[GroupRandomPhotoTest] 当前没有开启群聊"
-            );
-
-            return null;
-        }
+    const result =
+        await window.sendGroupRandomPhoto();
 
 
-        // --------------------------------------------------------
-        // 获取成员
-        // --------------------------------------------------------
-
-        const members =
-            (
-                typeof window.getGroupChatMembers === "function"
-            )
-                ?
-                window.getGroupChatMembers()
-                :
-                [];
-
-
-        if (
-            !members ||
-            members.length === 0
-        ) {
-
-            console.warn(
-                "[GroupRandomPhotoTest] 群聊没有成员"
-            );
-
-            return null;
-        }
-
-
-        // --------------------------------------------------------
-        // 随机选一个成员
-        // --------------------------------------------------------
-
-        const member =
-            members[
-                Math.floor(
-                    Math.random() *
-                    members.length
-                )
-            ];
-
-
-        if (!member) {
-            return null;
-        }
-
-
-        const currentSessionId =
-            (
-                typeof SESSION_ID !== "undefined" &&
-                SESSION_ID
-            )
-                ?
-                SESSION_ID
-                :
-                "default";
-
-
-        // --------------------------------------------------------
-        // 生成并保存照片
-        // --------------------------------------------------------
-
-        const photo =
-            await window.PhotoAlbum
-                .generateRandomPhotoForOwner(
-                    {
-
-                        ownerType:
-                            "group-member",
-
-                        ownerId:
-                            member.id,
-
-                        ownerName:
-                            member.name ||
-                            "群成员",
-
-                        conversationId:
-                            currentSessionId,
-
-                        groupId:
-                            currentSessionId,
-
-                        source:
-                            "reply-random"
-
-                    }
-                );
-
-
-        if (
-            !photo ||
-            !photo.image
-        ) {
-
-            console.error(
-                "[GroupRandomPhotoTest] 图片生成失败"
-            );
-
-            return null;
-        }
-
-
-        // --------------------------------------------------------
-        // 发送进聊天
-        // --------------------------------------------------------
-
-        addMessage(
-            {
-
-                id:
-                    Date.now() +
-                    Math.random(),
-
-                /*
-                 * 注意：
-                 * sender 仍然不是 user，
-                 * 这样保持“收到的消息”样式。
-                 */
-                sender:
-                    settings.partnerName ||
-                    "群聊",
-
-                text:
-                    "",
-
-                image:
-                    photo.image,
-
-                timestamp:
-                    new Date(),
-
-                status:
-                    "received",
-
-                favorited:
-                    false,
-
-                note:
-                    null,
-
-                type:
-                    "normal",
-
-
-                // ================================================
-                // 最关键的数据
-                // ================================================
-
-                groupMemberId:
-                    member.id,
-
-                albumPhotoId:
-                    photo.id
-
-            }
-        );
-
-
-        if (
-            typeof playSound ===
-            "function"
-        ) {
-
-            playSound(
-                "message"
-            );
-
-        }
-
+    if (result) {
 
         console.log(
-            "[GroupRandomPhotoTest] 测试成功：" +
-            (member.name || "群成员") +
-            " 发送了一张随机照片"
+            "[GroupRandomPhotoTest] 测试成功：",
+            result.member.name
         );
-
-
-        return {
-            member:
-                member,
-
-            photo:
-                photo
-        };
-
-
-    } catch (error) {
-
-        console.error(
-            "[GroupRandomPhotoTest] 测试失败：",
-            error
-        );
-
-        return null;
 
     }
+
+
+    return result;
 
 };
 
