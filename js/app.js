@@ -131,7 +131,121 @@ try {
         }
 
     }
+// ============================================================
+// 照片集：群聊成员每日 10% 随机照片
+// ============================================================
 
+if (
+    isGroupChat &&
+    window.PhotoAlbum &&
+    typeof window.PhotoAlbum.runDailyPhotoCheck === "function" &&
+    typeof window.getGroupChatMembers === "function"
+) {
+
+    const groupMembers =
+        window.getGroupChatMembers();
+
+
+    if (
+        Array.isArray(groupMembers) &&
+        groupMembers.length > 0
+    ) {
+
+        /*
+         * 每个成员独立进行一次每日判定。
+         *
+         * 例如 3 个成员：
+         *
+         * A：10%
+         * B：10%
+         * C：10%
+         *
+         * 互相完全独立。
+         */
+
+        for (
+            const member
+            of groupMembers
+        ) {
+
+            if (
+                !member ||
+                !member.id
+            ) {
+                continue;
+            }
+
+
+            try {
+
+                const dailyMemberOwner = {
+
+                    ownerType:
+                        "group-member",
+
+                    ownerId:
+                        member.id,
+
+                    ownerName:
+                        member.name ||
+                        "群成员",
+
+                    conversationId:
+                        SESSION_ID ||
+                        null,
+
+                    groupId:
+                        SESSION_ID ||
+                        null
+
+                };
+
+
+                const result =
+                    await window.PhotoAlbum
+                        .runDailyPhotoCheck(
+                            dailyMemberOwner
+                        );
+
+
+                if (
+                    result &&
+                    result.triggered &&
+                    !result.alreadyChecked
+                ) {
+
+                    console.log(
+                        "[PhotoAlbum] 群成员今日生成随机照片：",
+                        dailyMemberOwner.ownerName
+                    );
+
+                }
+
+            } catch (
+                memberPhotoError
+            ) {
+
+                /*
+                 * 某一个成员出错，
+                 * 不能影响其他成员。
+                 */
+
+                console.warn(
+                    "[PhotoAlbum] 群成员每日照片检查失败：",
+                    member &&
+                    member.name,
+                    memberPhotoError
+                );
+
+            }
+
+        }
+
+    }
+
+}
+
+    
 } catch (error) {
 
     /*
