@@ -50,10 +50,103 @@ document.addEventListener('DOMContentLoaded', async () => {
         await safeAwait(initializeSession());
 
         updateLoader('正在读取记忆存档...', '40%');
-        await safeAwait(loadData());
+await safeAwait(loadData());
 
-        updateLoader('正在渲染我们的世界...', '70%');
-        
+
+// ============================================================
+// 照片集：单聊对象每日 10% 随机照片
+// ============================================================
+
+try {
+
+    /*
+     * 这一阶段先只处理普通单聊。
+     *
+     * 群聊的“每个成员每天独立 10%”
+     * 下一阶段单独接入。
+     */
+
+    const isGroupChat =
+        (
+            typeof groupChatSettings !==
+            "undefined"
+        ) &&
+        groupChatSettings &&
+        groupChatSettings.enabled;
+
+
+    if (
+        !isGroupChat &&
+        window.PhotoAlbum &&
+        typeof window.PhotoAlbum.runDailyPhotoCheck ===
+        "function"
+    ) {
+
+        const dailyPartnerOwner = {
+
+            ownerType:
+                "partner",
+
+            ownerId:
+                "partner_" +
+                (SESSION_ID || "default"),
+
+            ownerName:
+                settings.partnerName ||
+                "对方",
+
+            conversationId:
+                SESSION_ID || null
+
+        };
+
+
+        const dailyPhotoResult =
+            await window.PhotoAlbum
+                .runDailyPhotoCheck(
+                    dailyPartnerOwner
+                );
+
+
+        /*
+         * 不弹通知。
+         *
+         * 用户只有自己打开照片集时，
+         * 才会发现对方今天新增了一张照片。
+         *
+         * 这样更像“对方自己的相册生活”。
+         */
+
+        if (
+            dailyPhotoResult &&
+            dailyPhotoResult.triggered &&
+            !dailyPhotoResult.alreadyChecked
+        ) {
+
+            console.log(
+                "[PhotoAlbum] 今日随机照片已生成：",
+                dailyPartnerOwner.ownerName
+            );
+
+        }
+
+    }
+
+} catch (error) {
+
+    /*
+     * 照片系统出错也绝不能阻止主网站启动。
+     */
+
+    console.warn(
+        "[PhotoAlbum] 每日照片检查失败：",
+        error
+    );
+
+}
+
+
+updateLoader('正在渲染我们的世界...', '70%');
         await Promise.allSettled([
             safeAwait(initializeRandomUI?.()),
             safeAwait(initMusicPlayer?.())
