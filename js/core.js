@@ -1688,43 +1688,39 @@ if (partnerPersonas && partnerPersonas.length > 0 && Math.random() < 0.3) {
                      throttledSaveData();
                 }
             }
-            // ============================================================
-// 特殊回复概率
+
+           // ============================================================
+// 特殊事件
 //
-// 0% ～ 3% ：对方拍一拍
-// 3% ～ 4% ：对方发送随机照片
-// 4% ～100%：正常文字回复
+// 单聊：
+//   拍一拍 3%
+//   随机图片 1%
 //
-// 使用同一个随机数，保证：
-// 拍一拍准确 3%
-// 随机照片准确 1%
+// 群聊：
+//   每个成员独立 3% 拍一拍
+//   每个成员独立 1% 随机图片
+//
+// 注意：
+// 特殊事件只是额外消息。
+// 无论是否触发，都继续执行后面的普通文字回复。
 // ============================================================
 
-const specialReplyRoll = Math.random();
-
-
-// ------------------------------------------------------------
-// 3%：拍一拍
-// ------------------------------------------------------------
-
-// ============================================================
-// 拍一拍：单聊 3%，群聊每个成员独立 3%
-// ============================================================
-
-const groupPokeEnabled =
+const isGroupSpecialMode =
     typeof window.isGroupChatEnabled === "function" &&
     window.isGroupChatEnabled();
 
 
+// ============================================================
+// 群聊特殊事件
+// ============================================================
+
 if (
-    groupPokeEnabled &&
+    isGroupSpecialMode &&
     typeof window.getGroupChatMembers === "function"
 ) {
 
     const groupMembers =
         window.getGroupChatMembers();
-
-    let groupPokeTriggered = false;
 
 
     if (
@@ -1742,21 +1738,56 @@ if (
             }
 
 
-            // 每一个群成员都独立拥有 3% 概率
+            // ----------------------------------------------------
+            // 这个成员独立 3% 概率拍一拍
+            // ----------------------------------------------------
+
             if (
                 Math.random() < 0.03
             ) {
 
                 if (
-                    typeof window._triggerPartnerPoke === "function"
+                    typeof window._triggerPartnerPoke ===
+                    "function"
                 ) {
 
                     window._triggerPartnerPoke(
                         member
                     );
 
-                    groupPokeTriggered =
-                        true;
+                }
+
+            }
+
+
+            // ----------------------------------------------------
+            // 这个成员独立 1% 概率发送随机图片
+            // ----------------------------------------------------
+
+            if (
+                Math.random() < 0.01
+            ) {
+
+                if (
+                    typeof window.sendGroupRandomPhoto ===
+                    "function"
+                ) {
+
+                    window.sendGroupRandomPhoto(
+                        member
+                    ).catch(
+                        function (error) {
+
+                            console.error(
+                                "[GroupRandomPhoto] " +
+                                (member.name || "群成员") +
+                                " 自动发送失败：",
+                                error
+                            );
+
+                        }
+                    );
+
                 }
 
             }
@@ -1765,238 +1796,180 @@ if (
 
     }
 
-
-    // 至少有一个成员触发拍一拍，
-    // 本次普通文字回复取消
-    if (
-        groupPokeTriggered
-    ) {
-        return;
-    }
-
 }
+
+
+// ============================================================
+// 单聊特殊事件
+// ============================================================
+
 else {
 
-    // 单聊仍然保持原来的 3%
+    // --------------------------------------------------------
+    // 单聊对象独立 3% 拍一拍
+    // --------------------------------------------------------
+
     if (
-        specialReplyRoll < 0.03
+        Math.random() < 0.03
     ) {
 
         if (
-            typeof window._triggerPartnerPoke === "function"
+            typeof window._triggerPartnerPoke ===
+            "function"
         ) {
 
             window._triggerPartnerPoke();
 
         }
 
-        return;
+    }
+
+
+    // --------------------------------------------------------
+    // 单聊对象独立 1% 发送随机图片
+    // --------------------------------------------------------
+
+    if (
+        Math.random() < 0.01 &&
+        window.PhotoAlbum &&
+        typeof window.PhotoAlbum.generateRandomPhotoForOwner ===
+        "function"
+    ) {
+
+        const partnerName =
+            settings.partnerName ||
+            "对方";
+
+
+        const partnerOwner = {
+
+            ownerType:
+                "partner",
+
+            ownerId:
+                "partner_" +
+                (SESSION_ID || "default"),
+
+            ownerName:
+                partnerName,
+
+            conversationId:
+                SESSION_ID || null,
+
+            source:
+                "reply-random"
+
+        };
+
+
+        window.PhotoAlbum
+            .generateRandomPhotoForOwner(
+                partnerOwner
+            )
+            .then(
+                function (photo) {
+
+                    if (
+                        !photo ||
+                        !photo.image
+                    ) {
+                        return;
+                    }
+
+
+                    addMessage({
+
+                        id:
+                            Date.now() +
+                            Math.random(),
+
+                        sender:
+                            partnerName,
+
+                        text:
+                            "",
+
+                        image:
+                            photo.image,
+
+                        timestamp:
+                            new Date(),
+
+                        status:
+                            "received",
+
+                        favorited:
+                            false,
+
+                        note:
+                            null,
+
+                        type:
+                            "normal",
+
+                        albumPhotoId:
+                            photo.id
+
+                    });
+
+
+                    if (
+                        typeof playSound ===
+                        "function"
+                    ) {
+
+                        playSound(
+                            "message"
+                        );
+
+                    }
+
+
+                    if (
+                        typeof window._sendPartnerNotification ===
+                        "function"
+                    ) {
+
+                        window._sendPartnerNotification(
+                            partnerName,
+                            "[图片]"
+                        );
+
+                    }
+
+
+                    console.log(
+                        "[RandomPhotoReply] " +
+                        partnerName +
+                        " 随机发送了一张照片"
+                    );
+
+                }
+            )
+            .catch(
+                function (error) {
+
+                    console.error(
+                        "[RandomPhotoReply] 随机照片发送失败：",
+                        error
+                    );
+
+                }
+            );
+
     }
 
 }
 
-// ------------------------------------------------------------
-// 1%：发送随机照片
-// ------------------------------------------------------------
-
-if (
-    specialReplyRoll < 0.04 &&
-    (
-        typeof window.isGroupChatEnabled !== "function" ||
-        !window.isGroupChatEnabled()
-    ) &&
-    window.PhotoAlbum &&
-    typeof window.PhotoAlbum.generateRandomPhotoForOwner === "function"
-) {
-
-    const partnerName =
-        settings.partnerName ||
-        "对方";
-
-
-    const partnerOwner = {
-
-        ownerType:
-            "partner",
-
-        /*
-         * 每个会话里的对话对象拥有独立 ID。
-         *
-         * 这样以后不同聊天对象的照片不会混淆。
-         */
-        ownerId:
-            "partner_" +
-            (SESSION_ID || "default"),
-
-        ownerName:
-            partnerName,
-
-        conversationId:
-            SESSION_ID || null,
-
-        source:
-            "reply-random"
-    };
-
-
-    /*
-     * generateRandomPhotoForOwner：
-     *
-     * ① 生成随机图片
-     * ② 自动存进照片集
-     * ③ 返回刚生成的照片
-     */
-
-    window.PhotoAlbum
-        .generateRandomPhotoForOwner(
-            partnerOwner
-        )
-        .then(
-            function (photo) {
-
-                if (
-                    !photo ||
-                    !photo.image
-                ) {
-
-                    console.warn(
-                        "[RandomPhotoReply] 图片生成失败"
-                    );
-
-                    return;
-                }
-
-
-                // ================================================
-                // 作为“对方发来的图片”加入聊天
-                // ================================================
-
-                addMessage({
-
-                    id:
-                        Date.now() +
-                        Math.random(),
-
-                    sender:
-                        partnerName,
-
-                    text:
-                        "",
-
-                    image:
-                        photo.image,
-
-                    timestamp:
-                        new Date(),
-
-                    status:
-                        "received",
-
-                    favorited:
-                        false,
-
-                    note:
-                        null,
-
-                    type:
-                        "normal",
-
-                    /*
-                     * 额外留下照片 ID。
-                     *
-                     * 以后如果我们想实现：
-                     * “从聊天跳转到照片集”
-                     * 就可以直接对应。
-                     */
-                    albumPhotoId:
-                        photo.id
-                });
-
-
-                // 消息提示音
-                if (
-                    typeof playSound ===
-                    "function"
-                ) {
-
-                    playSound(
-                        "message"
-                    );
-
-                }
-
-
-                // 系统通知
-                if (
-                    typeof window._sendPartnerNotification ===
-                    "function"
-                ) {
-
-                    window._sendPartnerNotification(
-                        partnerName,
-                        "[图片]"
-                    );
-
-                }
-
-
-                console.log(
-                    "[RandomPhotoReply] " +
-                    partnerName +
-                    " 随机发送了一张照片"
-                );
-
-            }
-        )
-        .catch(
-            function (error) {
-
-                console.error(
-                    "[RandomPhotoReply] 随机照片发送失败：",
-                    error
-                );
-
-            }
-        );
-
-
-    /*
-     * 很重要：
-     *
-     * 这张图片就是本次回复，
-     * 所以不继续执行后面的文字回复。
-     */
-    return;
-}
 
 // ============================================================
-// 群聊：1% 随机照片回复
-// ============================================================
-
-if (
-    specialReplyRoll >= 0.03 &&
-    specialReplyRoll < 0.04 &&
-    typeof window.isGroupChatEnabled === "function" &&
-    window.isGroupChatEnabled() &&
-    typeof window.sendGroupRandomPhoto === "function"
-) {
-
-    window.sendGroupRandomPhoto()
-        .catch(
-            function (error) {
-
-                console.error(
-                    "[GroupRandomPhoto] 自动发送失败：",
-                    error
-                );
-
-            }
-        );
-
-
-    // 图片就是本次回复
-    return;
-}
+// 注意：这里故意没有 return
+//
+// 无论有没有出现：
+// 拍一拍 / 随机图片
+//
+// 都继续执行下面原来的普通回复系统。
+// ============================================================     
                 
             const replyCount = Math.random() < 0.75 ? 1: (Math.random() < 0.95 ? 2: 3);
             if (!customReplies || customReplies.length === 0) {
@@ -2366,7 +2339,7 @@ window.testPartnerRandomPhoto = async function () {
 // 正式功能：让随机群成员发送一张随机照片
 // ============================================================
 
-window.sendGroupRandomPhoto = async function () {
+window.sendGroupRandomPhoto = async function (targetMember = null) {
 
     try {
 
@@ -2415,13 +2388,16 @@ window.sendGroupRandomPhoto = async function () {
 
 
         // 随机选择发送者
-        const member =
-            members[
-                Math.floor(
-                    Math.random() *
-                    members.length
-                )
-            ];
+       // 如果外部指定了成员，就由指定成员发送。
+// 没指定时仍然随机选择，方便保留测试函数。
+const member =
+    targetMember ||
+    members[
+        Math.floor(
+            Math.random() *
+            members.length
+        )
+    ];
 
 
         if (
