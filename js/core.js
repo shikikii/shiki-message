@@ -1369,7 +1369,7 @@ const addMessage = (message) => {
         function updateReplyPreview() { window.updateReplyPreview(); }
 
         // ── 对方拍一拍核心逻辑（提取为独立函数，供随机触发和测试指令共用）──
-        window._triggerPartnerPoke = function() {
+        window._triggerPartnerPoke = function(groupMember = null) {
             let pokeAction = null;
 
             const groups = window.customPokeGroups || [];
@@ -1409,9 +1409,22 @@ const addMessage = (message) => {
             if (typeof window._sanitizePokeTextForDisplay === 'function') {
                 pokeAction = window._sanitizePokeTextForDisplay(pokeAction);
             }
+            
+let pokeSenderName =
+    settings.partnerName ||
+    "对方";
+
+if (
+    groupMember &&
+    groupMember.name
+) {
+    pokeSenderName =
+        groupMember.name;
+}
+                
             const pokeText = (typeof window._formatPartnerPokeText === 'function')
-                ? window._formatPartnerPokeText(`${settings.partnerName} ${pokeAction}`)
-                : `${settings.partnerName} ${pokeAction}`;
+                ? window._formatPartnerPokeText(`${pokeSenderName} ${pokeAction}`)
+                : `${pokeSenderName} ${pokeAction}`;
 
             addMessage({ id: Date.now(), text: pokeText, timestamp: new Date(), type: 'system' });
             if (typeof playSound === 'function') playSound('partner_poke');
@@ -1694,19 +1707,93 @@ const specialReplyRoll = Math.random();
 // 3%：拍一拍
 // ------------------------------------------------------------
 
-if (specialReplyRoll < 0.03) {
+// ============================================================
+// 拍一拍：单聊 3%，群聊每个成员独立 3%
+// ============================================================
+
+const groupPokeEnabled =
+    typeof window.isGroupChatEnabled === "function" &&
+    window.isGroupChatEnabled();
+
+
+if (
+    groupPokeEnabled &&
+    typeof window.getGroupChatMembers === "function"
+) {
+
+    const groupMembers =
+        window.getGroupChatMembers();
+
+    let groupPokeTriggered = false;
+
 
     if (
-        typeof window._triggerPartnerPoke === "function"
+        Array.isArray(groupMembers) &&
+        groupMembers.length > 0
     ) {
 
-        window._triggerPartnerPoke();
+        for (const member of groupMembers) {
+
+            if (
+                !member ||
+                !member.id
+            ) {
+                continue;
+            }
+
+
+            // 每一个群成员都独立拥有 3% 概率
+            if (
+                Math.random() < 0.03
+            ) {
+
+                if (
+                    typeof window._triggerPartnerPoke === "function"
+                ) {
+
+                    window._triggerPartnerPoke(
+                        member
+                    );
+
+                    groupPokeTriggered =
+                        true;
+                }
+
+            }
+
+        }
 
     }
 
-    return;
-}
 
+    // 至少有一个成员触发拍一拍，
+    // 本次普通文字回复取消
+    if (
+        groupPokeTriggered
+    ) {
+        return;
+    }
+
+}
+else {
+
+    // 单聊仍然保持原来的 3%
+    if (
+        specialReplyRoll < 0.03
+    ) {
+
+        if (
+            typeof window._triggerPartnerPoke === "function"
+        ) {
+
+            window._triggerPartnerPoke();
+
+        }
+
+        return;
+    }
+
+}
 
 // ------------------------------------------------------------
 // 1%：发送随机照片
