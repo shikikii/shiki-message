@@ -846,12 +846,11 @@
         return card;
     }
 
+// ============================================================
+// 加入高级功能 → 实用工具
+// ============================================================
 
-    // ============================================================
-    // 尝试自动加入高级功能区域
-    // ============================================================
-
-   function createAdvancedEntry() {
+function createAdvancedEntry() {
 
     // 防止重复创建
     if (
@@ -863,31 +862,24 @@
     }
 
 
-    // ============================================================
-    // 精确找到：
-    // 高级功能 → 实用工具 → settings-item-list
-    // ============================================================
-
+    // 精确寻找“高级功能 → 实用工具”的网格
     const container =
         document.querySelector(
-            "#advanced-modal .settings-section .settings-item-list"
+            "#advanced-modal .settings-item-list"
         );
 
 
     if (!container) {
 
         console.warn(
-            "[PhotoAlbumUI] 未找到高级功能 → 实用工具区域"
+            "[PhotoAlbumUI] 未找到高级功能实用工具区域"
         );
 
         return;
     }
 
 
-    // ============================================================
-    // 创建与原网站完全同结构的入口
-    // ============================================================
-
+    // 创建照片集入口
     const entry =
         document.createElement("div");
 
@@ -896,6 +888,7 @@
         "photo-album-advanced-entry";
 
 
+    // 使用网站现有功能卡片的 class
     entry.className =
         "settings-item";
 
@@ -906,12 +899,7 @@
     `;
 
 
-    // ============================================================
-    // 点击：
-    // 先关闭高级功能窗口
-    // 再打开照片集
-    // ============================================================
-
+    // 点击照片集
     entry.addEventListener(
         "click",
         function () {
@@ -922,15 +910,10 @@
                 );
 
 
-            /*
-             * 优先调用原网站自己的 hideModal，
-             * 这样动画和行为都保持一致。
-             */
-
+            // 关闭高级功能
             if (
                 advancedModal &&
-                typeof window.hideModal ===
-                "function"
+                typeof window.hideModal === "function"
             ) {
 
                 window.hideModal(
@@ -947,22 +930,21 @@
             }
 
 
+            // 打开照片集
             openAlbum();
 
         }
     );
 
 
-    // ============================================================
-    // 插到“信封投递”后面
-    // ============================================================
-
+    // 找到“信封投递”
     const envelope =
         document.getElementById(
             "envelope-function"
         );
 
 
+    // 优先插到信封投递后面
     if (
         envelope &&
         envelope.parentElement === container
@@ -975,6 +957,7 @@
 
     } else {
 
+        // 找不到信封时直接放在最后
         container.appendChild(
             entry
         );
@@ -983,98 +966,11 @@
 
 
     console.log(
-        "[PhotoAlbumUI] 已加入高级功能入口"
+        "[PhotoAlbumUI] 照片集入口已加入高级功能"
     );
 
 }
-
-        if (
-            document.getElementById(
-                "photo-album-advanced-entry"
-            )
-        ) {
-            return;
-        }
-
-
-        /*
-         * 优先寻找常见的高级功能容器。
-         * 如果找不到，就退回到页面 body 创建隐藏兼容入口。
-         */
-
-        const possibleSelectors = [
-            "#advanced-modal .tool-grid",
-            "#advanced-modal .tools-grid",
-            "#advanced-modal .feature-grid",
-            "#advanced-modal .advanced-grid",
-            "#advanced-modal .modal-body",
-            "#advanced-modal"
-        ];
-
-
-        let container =
-            null;
-
-
-        for (
-            const selector
-            of possibleSelectors
-        ) {
-
-            const found =
-                document.querySelector(
-                    selector
-                );
-
-            if (found) {
-
-                container =
-                    found;
-
-                break;
-            }
-        }
-
-
-        if (!container) {
-
-            console.warn(
-                "[PhotoAlbumUI] 没找到高级功能区域，照片集仍可通过 PhotoAlbumUI.open() 打开"
-            );
-
-            return;
-        }
-
-
-        const entry =
-            document.createElement(
-                "button"
-            );
-
-        entry.id =
-            "photo-album-advanced-entry";
-
-        entry.type =
-            "button";
-
-        entry.className =
-            "photo-album-entry photo-album-btn";
-
-        entry.innerHTML =
-            "📷 照片集";
-
-
-        entry.addEventListener(
-            "click",
-            openAlbum
-        );
-
-
-        container.appendChild(
-            entry
-        );
-    }
-
+  
 
     // ============================================================
     // 初始化
