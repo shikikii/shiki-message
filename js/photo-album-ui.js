@@ -851,7 +851,142 @@
     // 尝试自动加入高级功能区域
     // ============================================================
 
-    function createAdvancedEntry() {
+   function createAdvancedEntry() {
+
+    // 防止重复创建
+    if (
+        document.getElementById(
+            "photo-album-advanced-entry"
+        )
+    ) {
+        return;
+    }
+
+
+    // ============================================================
+    // 精确找到：
+    // 高级功能 → 实用工具 → settings-item-list
+    // ============================================================
+
+    const container =
+        document.querySelector(
+            "#advanced-modal .settings-section .settings-item-list"
+        );
+
+
+    if (!container) {
+
+        console.warn(
+            "[PhotoAlbumUI] 未找到高级功能 → 实用工具区域"
+        );
+
+        return;
+    }
+
+
+    // ============================================================
+    // 创建与原网站完全同结构的入口
+    // ============================================================
+
+    const entry =
+        document.createElement("div");
+
+
+    entry.id =
+        "photo-album-advanced-entry";
+
+
+    entry.className =
+        "settings-item";
+
+
+    entry.innerHTML = `
+        <i class="fas fa-images"></i>
+        <span>照片集</span>
+    `;
+
+
+    // ============================================================
+    // 点击：
+    // 先关闭高级功能窗口
+    // 再打开照片集
+    // ============================================================
+
+    entry.addEventListener(
+        "click",
+        function () {
+
+            const advancedModal =
+                document.getElementById(
+                    "advanced-modal"
+                );
+
+
+            /*
+             * 优先调用原网站自己的 hideModal，
+             * 这样动画和行为都保持一致。
+             */
+
+            if (
+                advancedModal &&
+                typeof window.hideModal ===
+                "function"
+            ) {
+
+                window.hideModal(
+                    advancedModal
+                );
+
+            } else if (
+                advancedModal
+            ) {
+
+                advancedModal.style.display =
+                    "none";
+
+            }
+
+
+            openAlbum();
+
+        }
+    );
+
+
+    // ============================================================
+    // 插到“信封投递”后面
+    // ============================================================
+
+    const envelope =
+        document.getElementById(
+            "envelope-function"
+        );
+
+
+    if (
+        envelope &&
+        envelope.parentElement === container
+    ) {
+
+        envelope.insertAdjacentElement(
+            "afterend",
+            entry
+        );
+
+    } else {
+
+        container.appendChild(
+            entry
+        );
+
+    }
+
+
+    console.log(
+        "[PhotoAlbumUI] 已加入高级功能入口"
+    );
+
+}
 
         if (
             document.getElementById(
