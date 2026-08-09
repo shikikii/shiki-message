@@ -39,6 +39,8 @@
 
     const DAILY_RANDOM_CHANCE = 0.10;
 
+    const MAX_PHOTOS = 500;
+
 
     // ============================================================
     // 工具：安全获取 localforage
@@ -301,7 +303,70 @@
             photo
         );
 
+// ============================================================
+// 照片容量保护
+// ============================================================
+// 最多保留 MAX_PHOTOS 张照片。
+// 超出数量时，优先删除最旧的随机生成照片，
+// 尽量保留用户自己上传的照片。
+// ============================================================
 
+if (
+    photos.length >
+    MAX_PHOTOS
+) {
+
+    while (
+        photos.length >
+        MAX_PHOTOS
+    ) {
+
+        let removableIndex = -1;
+
+
+        // 从最后开始寻找最旧的“非用户上传”照片
+        for (
+            let i = photos.length - 1;
+            i >= 0;
+            i--
+        ) {
+
+            if (
+                photos[i] &&
+                photos[i].source !==
+                "user-upload"
+            ) {
+
+                removableIndex = i;
+
+                break;
+
+            }
+
+        }
+
+
+        // 如果 500 多张全部都是用户上传，
+        // 才删除最旧的一张
+        if (
+            removableIndex === -1
+        ) {
+
+            removableIndex =
+                photos.length - 1;
+
+        }
+
+
+        photos.splice(
+            removableIndex,
+            1
+        );
+
+    }
+
+}
+        
         const success =
             await saveAllPhotos(
                 photos
@@ -1132,6 +1197,9 @@
 
         DAILY_RANDOM_CHANCE:
             DAILY_RANDOM_CHANCE,
+
+        MAX_PHOTOS:
+            MAX_PHOTOS,
 
 
         getAll:
