@@ -1999,7 +1999,202 @@ if (
                 }, delay);
             }
         }
+// ============================================================
+// 测试：强制让单聊对象发送一张随机照片
+// ============================================================
 
+window.testPartnerRandomPhoto = async function () {
+
+    try {
+
+        if (
+            !window.PhotoAlbum ||
+            typeof window.PhotoAlbum.generateRandomPhotoForOwner !== "function"
+        ) {
+
+            console.error(
+                "[RandomPhotoTest] PhotoAlbum 未加载"
+            );
+
+            return null;
+        }
+
+
+        const partnerName =
+            (
+                typeof settings !== "undefined" &&
+                settings &&
+                settings.partnerName
+            )
+                ?
+                settings.partnerName
+                :
+                "对方";
+
+
+        const currentSessionId =
+            (
+                typeof SESSION_ID !== "undefined" &&
+                SESSION_ID
+            )
+                ?
+                SESSION_ID
+                :
+                "default";
+
+
+        // ========================================================
+        // 生成并存进照片集
+        // ========================================================
+
+        const photo =
+            await window.PhotoAlbum
+                .generateRandomPhotoForOwner(
+                    {
+
+                        ownerType:
+                            "partner",
+
+                        ownerId:
+                            "partner_" +
+                            currentSessionId,
+
+                        ownerName:
+                            partnerName,
+
+                        conversationId:
+                            currentSessionId,
+
+                        source:
+                            "reply-random"
+
+                    }
+                );
+
+
+        if (
+            !photo ||
+            !photo.image
+        ) {
+
+            console.error(
+                "[RandomPhotoTest] 图片生成失败"
+            );
+
+            return null;
+        }
+
+
+        // ========================================================
+        // 作为对方发来的图片加入聊天
+        // ========================================================
+
+        if (
+            typeof addMessage !==
+            "function"
+        ) {
+
+            console.error(
+                "[RandomPhotoTest] addMessage 不存在"
+            );
+
+            return null;
+        }
+
+
+        addMessage(
+            {
+
+                id:
+                    Date.now() +
+                    Math.random(),
+
+                sender:
+                    partnerName,
+
+                text:
+                    "",
+
+                image:
+                    photo.image,
+
+                timestamp:
+                    new Date(),
+
+                status:
+                    "received",
+
+                favorited:
+                    false,
+
+                note:
+                    null,
+
+                type:
+                    "normal",
+
+                albumPhotoId:
+                    photo.id
+
+            }
+        );
+
+
+        // ========================================================
+        // 提示音
+        // ========================================================
+
+        if (
+            typeof playSound ===
+            "function"
+        ) {
+
+            playSound(
+                "message"
+            );
+
+        }
+
+
+        // ========================================================
+        // 系统通知
+        // ========================================================
+
+        if (
+            typeof window._sendPartnerNotification ===
+            "function"
+        ) {
+
+            window._sendPartnerNotification(
+                partnerName,
+                "[图片]"
+            );
+
+        }
+
+
+        console.log(
+            "[RandomPhotoTest] 测试成功：" +
+            partnerName +
+            " 发送了一张随机照片"
+        );
+
+
+        return photo;
+
+
+    } catch (error) {
+
+        console.error(
+            "[RandomPhotoTest] 测试失败：",
+            error
+        );
+
+        return null;
+
+    }
+
+};
 function showModal(modalElement, focusElement = null) {
             if (modalElement._hideTimeout) {
                 clearTimeout(modalElement._hideTimeout);
